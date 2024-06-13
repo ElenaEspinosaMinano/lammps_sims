@@ -106,7 +106,7 @@ thermo_style   custom   step  temp  epair
 
 
 ##### Dump configurations
-dump dum1 all custom 1000 dump_model_3 id type x y z ix iy iz
+dump dum1 all custom 5000 dump_model_3_run_1.dat id type x y z ix iy iz
 # every 1000 time steps, each atom's id, type, x,y,z coords and x,y,z image flages are output.
 # image flags count how many times each atom has moved through a periodic boundary
 #################################################
@@ -118,11 +118,11 @@ dump dum1 all custom 1000 dump_model_3 id type x y z ix iy iz
 timestep 0.01 
 
 ###
-# run integration for a number of steps to equilibrate with soft potnentials
+# run integration for a number of steps to equilibrate with soft potentials
 ###
 
-run 1000000
+run 2000000
 
 
 #### write a final restart data file
-write_data final.restart.data_sphere_3 nocoeff
+write_data final_model_3_run_1.restart.data_sphere nocoeff
