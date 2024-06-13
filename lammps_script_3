@@ -1,0 +1,128 @@
+###############################################
+# LAMMPS script for a DNA and proteins - model 3
+###############################################
+
+###
+# Box and units  (use LJ units and periodic boundaries)
+###
+
+units lj                 # use lennard-jones (i.e. dimensionless) units
+atom_style angle         # atoms with bonds and angles
+
+boundary p p p           # all boundaries are periodic
+
+###
+# Pair interactions require lists of neighbours to be calculated
+###
+neighbor 1.9 bin
+neigh_modify every 5 delay 5 check yes 
+#comm_modify cutoff 3.55
+
+### 
+# READ "start" data file 
+###
+read_data initial_configuration_sphere.txt # same for all the models :)
+
+
+### 
+# Reset timestep 
+###
+reset_timestep 0 
+
+###
+# Define groups 
+###
+group all type 1 2 3 4 # 5300 atoms
+group poly type 1 2 3 # 5000 polymer beads - type 1: non-sticky sites, type 2: very-sticky sites, type 3: weakly-sticky site
+group prot type 4 # 300 proteins - weak interactions between proteins
+
+
+## The initial config file has too many proteins
+## there are 1000 (id numbers 5001 to 6000)
+## lets keep 300 of them
+
+group todel id <> 5301 6000   ## put atoms in a group
+delete_atoms group todel      ## delete the atoms in that group
+
+
+
+###
+# Set up interactions - this initial config has already been equilbrated, do not need to start with soft potentials
+###
+
+## angles
+angle_style  cosine
+angle_coeff   1  4.0
+# this choice gives a polymer with the same persistence length as a chromatin fibre
+
+## Between bonded atoms
+bond_style   fene
+special_bonds fene #<=== I M P O R T A N T prevents LJ from being counted twice
+# For style FENE, specify:
+#   * bond type
+#   * K (energy/distance^2) 
+#   * R0 (distance)
+#   * epsilon
+#   * sigma
+bond_coeff   1    30.0   1.6   1.0   1.0
+
+## Between non-bonded atoms
+pair_style      lj/cut 1.12246152962189
+pair_modify shift yes        # option to ensure energy is calculated corectly
+#  pair_coeff for LJ, specify 4:
+#    * atom type interacting with
+#    * atom type
+#    * energy
+#    * mean diameter of the two atom types
+#    * cutoff
+pair_coeff      * * 1.0 1.0 1.12246152962189   ## initially set all interactions repulsive
+
+## Lets switch on some attractive interactions
+
+## For model 3 - proteins (type 4) stick strongly to type 2 sites, weakly to type 3 sites + weakly to each other
+
+pair_coeff 3 4 4.0 1.0 1.8  # 'weakly' sticky to type 3
+pair_coeff 4 4 4.0 1.0 1.8  # 'weakly' sticky to each other (type 4)
+pair_coeff 2 4 8.0 1.0 1.8  # 'very' sticky to type 2
+
+
+
+###
+# Set up fixes
+###
+variable seed equal 54654653     # a seed for the thermostat
+
+fix mynve all nve                             # NVE integrator
+fix mylange all langevin   1.0 1.0 1.0 ${seed}  # langevin thermostat
+
+# want atoms confined within a sphere
+fix myind all indent 50.0 sphere 0.0 0.0 0.0 28.226 side in
+
+
+##### Output thermodynamic info to screen  #####
+thermo 5000
+thermo_style   custom   step  temp  epair
+#################################################
+
+
+##### Dump configurations
+dump dum1 all custom 1000 dump_model_3 id type x y z ix iy iz
+# every 1000 time steps, each atom's id, type, x,y,z coords and x,y,z image flages are output.
+# image flags count how many times each atom has moved through a periodic boundary
+#################################################
+
+
+###
+# set timestep of integrator
+###
+timestep 0.01 
+
+###
+# run integration for a number of steps to equilibrate with soft potnentials
+###
+
+run 1000000
+
+
+#### write a final restart data file
+write_data final.restart.data_sphere_3 nocoeff
