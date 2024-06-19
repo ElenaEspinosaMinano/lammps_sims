@@ -1,0 +1,63 @@
+
+### Set some variable at the start of the script
+
+variable dt equal 0.01
+variable switch_interval equal 500
+
+variable switch_interval_steps equal ${switch_interval}/${dt}
+variable switch_rate_invSteps equal 1.0/${switch_interval_steps}
+
+variable Runtime equal 5000000
+variable Dt equal 2500  ## attempt interval -- choose to keep prob smallish
+variable prob equal ${switch_rate_invSteps}*${Dt}  ## probability 
+
+
+## need to add these line when reading the data file
+
+read_data initial_condition.txt extra/atom/types 1
+mass 5 1.0
+
+
+## I would double the number of proteins
+## and set half of them to type 5 at the start
+
+## lets keep 600 proteins
+group todel id <> 5601 6000   ## put atoms in a group
+delete_atoms group todel      ## delete the atoms in that group
+group todel delete
+group toswitch id <> 5301 5600
+set group toswitch type 5
+group toswitch delete
+
+
+## then need to set up the pair coefs so that type 5 are not sticky
+## but interact as types 1 with 1
+
+
+## then replace the 'run' section with the follwing, which sets up a loop
+
+
+variable nloops equal ${Runtime}/${Dt}
+variable a loop ${nloops} 
+label start_loop
+
+#SET VARIABLE SEEDS TO AVOID DRIFTS!
+variable seed1 equal ${a}*10+${seed} 
+variable seed2 equal ${a}*11+${seed} 
+
+#REDEFINE GROUPS EVERY TIME AT THE BEGINNING OF THE LOOP! 
+group Pon type 4
+group Poff type 5
+# Do the switching
+set group Pon type/fraction 5 ${prob} ${seed1}
+set group Poff type/fraction 4 ${prob} ${seed2}
+
+# do the run
+run ${Dt}
+
+#DELETE GROUPS
+group Pon delete
+group Poff delete
+
+next a 
+jump in.run start_loop  ## replace with the right file name here
