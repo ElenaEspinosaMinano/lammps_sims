@@ -78,7 +78,7 @@ pair_modify shift yes        # option to ensure energy is calculated corectly
 #    * energy
 #    * mean diameter of the two atom types
 #    * cutoff
-pair_coeff      * * 1.0 1.0 1.12246152962189   ## initially set all interactions repulsive (suppose this means just excluded vol)
+pair_coeff      * * 1.0 1.0 1.12246152962189   ## initially set all interactions repulsive (just excluded vol)
 
 ## Lets switch on some attractive interactions
 

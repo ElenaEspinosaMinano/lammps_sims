@@ -1,5 +1,5 @@
 ###############################################
-# LAMMPS script for a DNA and proteins - model 4
+# LAMMPS script for a DNA and proteins - model 4 (control)
 ###############################################
 
 ###
@@ -21,7 +21,7 @@ neigh_modify every 5 delay 5 check yes
 ### 
 # READ "start" data file 
 ###
-read_data ./configfiles/initial_configuration_sphere.txt # same for all the models :)
+read_data ./configfiles/initial_configuration_sphere_copy.txt # same for all the models :)
 
 
 ### 
@@ -50,8 +50,9 @@ delete_atoms group todel      ## delete the atoms in that group
 # Set up interactions - this initial config has already been equilbrated, do not need to start with soft potentials
 ###
 
-# set variable attraction_strength to be able to run 8 sim in parallel
-variable attraction_strength universe 1 2 3 4 5 6 7 8 # 8 simulations with increasing attraction_strength between type 4 atoms
+# set variable attraction_strength to be able to run 12 sim in parallel
+variable attraction_strength universe 0.3 0.6 0.9 1.2 1.5 1.8 2.1 2.4 2.7 3.0 3.3 3.6 3.9 # 12 sims with increasing attraction_strength between type 4 atoms
+variable seed_no universe 1 2 3 4 5 6 7 8 9 10 11 12 13
 
 ## angles
 angle_style  cosine
@@ -78,22 +79,20 @@ pair_modify shift yes        # option to ensure energy is calculated corectly
 #    * energy
 #    * mean diameter of the two atom types
 #    * cutoff
-pair_coeff      * * 1.0 1.0 1.12246152962189   ## initially set all interactions repulsive
+pair_coeff      * * 1.0 1.0 1.12246152962189   ## initially set all interactions repulsive (just excluded vol)
 
 ## Lets switch on some attractive interactions
 
-## For model 4 - proteins (type 4) stick strongly to type 2 sites, weakly to type 3 sites + with some strength to each other
+## For model 4 (control) - proteins (type 4) stick with some attractive strength to each other but don't stick to any polymer type
 
-pair_coeff 3 4 4.0 1.0 1.8  # 'weakly' sticky to type 3
 pair_coeff 4 4 ${attraction_strength} 1.0 1.8  # 'variably' sticky to each other (type 4)
-pair_coeff 2 4 8.0 1.0 1.8  # 'very' sticky to type 2
 
 ###
 # Set up fixes
 ###
 
-# set seed for the thermostat using attraction_strength variable - feel like I should be able to do it like this and not need to do so many ifsss:
-variable seed equal 5465465${attraction_strength}
+# set seed for the thermostat using attraction_strength variable - feel like I should defo be able to do it like this:
+variable seed equal 5465465+${seed_no}
 
 #if "${attraction_strength} == 1" then &
 #    "variable seed equal 54654651" &
@@ -133,8 +132,8 @@ thermo_style   custom   step  temp  epair
 
 
 ##### Dump configurations
-dump dum1 all custom 5000 ./dumpfiles/dump_model_4_var_${attraction_strength}_run_1.dat id type x y z ix iy iz
-# every 1000 time steps, each atom's id, type, x,y,z coords and x,y,z image flages are output.
+dump dum1 all custom 5000 ./dumpfiles/dump_model_4_var_${seed_no}_run_2_control.dat id type x y z ix iy iz
+# every 5000 time steps, each atom's id, type, x,y,z coords and x,y,z image flages are output.
 # image flags count how many times each atom has moved through a periodic boundary
 #################################################
 
@@ -152,4 +151,4 @@ run 2000000
 
 
 #### write a final restart data file
-write_data ./restartfiles/final_model_4_var_${attraction_strength}_run_1.restart.data_sphere nocoeff
+write_data ./restartfiles/final_model_4_var_${seed_no}_run_2_control.restart.data_sphere nocoeff
