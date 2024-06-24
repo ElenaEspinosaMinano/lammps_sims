@@ -92,31 +92,7 @@ pair_coeff 4 4 ${attraction_strength} 1.0 1.8  # 'variably' sticky to each other
 ###
 
 # set seed for the thermostat using attraction_strength variable - feel like I should defo be able to do it like this:
-variable seed equal 5465465+${seed_no}
-
-#if "${attraction_strength} == 1" then &
-#    "variable seed equal 54654651" &
-
-#elif "${attraction_strength} == 2" then &
-#    "variable seed equal 54654652" & 
-
-#elif "${attraction_strength} == 3" &
-#    "variable seed equal 54654653" & 
-
-#elif "${attraction_strength} == 4" then &
-#    "variable seed equal 54654654" & 
-
-#elif "${attraction_strength} == 5" &
-#    "variable seed equal 54654655" & 
-
-#elif "${attraction_strength} == 6" then &
-#    "variable seed equal 54654656" & 
-
-#elif "${attraction_strength} == 7" &
-#    "variable seed equal 54654657" & 
-
-#else &
-#    "variable seed equal 54654658" &
+variable seed equal 5465465 + ${seed_no}*1000
 
 fix mynve all nve                             # NVE integrator
 fix mylange all langevin   1.0 1.0 1.0 ${seed}  # langevin thermostat
@@ -132,7 +108,7 @@ thermo_style   custom   step  temp  epair
 
 
 ##### Dump configurations
-dump dum1 all custom 5000 ./dumpfiles/dump_model_4_var_${seed_no}_run_2_control.dat id type x y z ix iy iz
+dump dum1 all custom 5000 /storage/cmstore01/groups/brackley/s2205640/dumpfiles/dump_model_4_var_${seed_no}_run_2_control.dat id type x y z ix iy iz
 # every 5000 time steps, each atom's id, type, x,y,z coords and x,y,z image flages are output.
 # image flags count how many times each atom has moved through a periodic boundary
 #################################################

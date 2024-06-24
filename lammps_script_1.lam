@@ -105,7 +105,7 @@ thermo_style   custom   step  temp  epair
 
 
 ##### Dump configurations
-dump dum1 all custom 5000 ./dumpfiles/dump_model_1_run_1.dat id type x y z ix iy iz
+dump dum1 all custom 5000 /storage/cmstore01/groups/brackley/s2205640/dumpfiles/dump_model_1_run_1.dat id type x y z ix iy iz
 # every 1000 time steps, each atom's id, type, x,y,z coords and x,y,z image flages are output.
 # image flags count how many times each atom has moved through a periodic boundary
 #################################################
