@@ -92,7 +92,7 @@ pair_coeff 4 4 ${attraction_strength} 1.0 1.8  # 'variably' sticky to each other
 ###
 
 # set seed for the thermostat using attraction_strength variable - feel like I should defo be able to do it like this:
-variable seed equal 5465465 + ${seed_no}*1000
+variable seed equal 5465465+${seed_no}*1000
 
 fix mynve all nve                             # NVE integrator
 fix mylange all langevin   1.0 1.0 1.0 ${seed}  # langevin thermostat
