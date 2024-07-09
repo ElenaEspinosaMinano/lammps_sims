@@ -1,0 +1,184 @@
+###############################################
+# LAMMPS script for a DNA and proteins - model 7 with varying no of proteins (300 - 500)
+###############################################
+
+###
+# Box and units  (use LJ units and periodic boundaries)
+###
+
+units lj                 # use lennard-jones (i.e. dimensionless) units
+atom_style angle         # atoms with bonds and angles
+
+boundary p p p           # all boundaries are periodic
+
+###
+# Pair interactions require lists of neighbours to be calculated
+###
+neighbor 1.9 bin
+neigh_modify every 5 delay 5 check yes 
+#comm_modify cutoff 3.55
+
+
+### Set some variable at the start of the script
+
+variable dt equal 0.01                                                              # 1 time unit = dt timesteps = 0.01
+variable switch_interval equal 500                                                  # tau_switch = 500 time units
+
+variable switch_interval_steps equal ${switch_interval}/${dt}                       # tau_switch-steps = tau_switch / dt = 5x10^4 timesteps
+variable switch_rate_invSteps equal 1.0/${switch_interval_steps}                    # k_switch-steps = 1 / tau_switch-steps = 0.00002 timesteps^(-1)
+
+variable Runtime equal 10000000                                                     ####### changed to 10x10^6 after running a test! #######
+variable Dt equal 2500  ## attempt interval -- choose to keep prob smallish         # Dt = t_attempt = 2500
+variable prob equal ${switch_rate_invSteps}*${Dt}  ## probability                   # prob = Dt / tau_switch-steps = k_switch-steps * Dt = 0.05
+
+
+### 
+# READ "start" data file 
+###
+read_data ../configfiles/initial_configuration_sphere.txt extra/atom/types 1     # added the extra atom type
+mass 5 1.0 # atom type 5 has mass 1.0
+
+
+### 
+# Reset timestep 
+###
+reset_timestep 0 
+
+###
+# Define groups 
+###
+group all type 1 2 3 4 # 5300 atoms
+group poly type 1 2 3 # 5000 polymer beads - type 1 (4669) + type 3 (250): non-sticky sites and type 2 (81): very-sticky sites
+group prot type 4 # initially 1000 proteins
+
+
+## The initial config file has too many proteins
+## there are 1000 (id numbers 5001 to 6000)
+
+variable no_prot universe 300 400 500 # 3 sims with increasing no of proteins
+
+if "${no_prot} == 300" then "group todel id <> 5301 6000"
+if "${no_prot} == 400" then "group todel id <> 5401 6000"
+if "${no_prot} == 500" then "group todel id <> 5501 6000"
+
+delete_atoms group todel                    ## delete the atoms in that group
+group todel delete
+
+if "${no_prot} == 300" then "group toswitch id <> 5151 5300"
+if "${no_prot} == 400" then "group toswitch id <> 5201 5400"
+if "${no_prot} == 500" then "group toswitch id <> 5251 5500"
+
+set group toswitch type 5
+group toswitch delete
+
+
+## then need to set up the pair coefs so that type 5 are not sticky
+## but interact as types 1 with 1
+
+
+###
+# Set up interactions - this initial config has already been equilbrated, do not need to start with soft potentials
+###
+
+## angles
+angle_style  cosine
+angle_coeff   1  4.0
+# this choice gives a polymer with the same persistence length as a chromatin fibre
+
+## Between bonded atoms
+bond_style   fene
+special_bonds fene #<=== I M P O R T A N T prevents LJ from being counted twice
+# For style FENE, specify:
+#   * bond type
+#   * K (energy/distance^2) 
+#   * R0 (distance)
+#   * epsilon
+#   * sigma
+bond_coeff   1    30.0   1.6   1.0   1.0
+
+## Between non-bonded atoms
+pair_style      lj/cut 1.12246152962189
+pair_modify shift yes        # option to ensure energy is calculated corectly
+#  pair_coeff for LJ, specify 4:
+#    * atom type interacting with
+#    * atom type
+#    * energy
+#    * mean diameter of the two atom types
+#    * cutoff
+pair_coeff      * * 1.0 1.0 1.12246152962189   ## initially set all interactions repulsive
+
+## Lets switch on some attractive interactions
+
+## For model 7 - proteins (type 4) stick strongly to type 2 sites, weakly to type 3 sites + weakly to each other (type 1 + 5 - normal polymer beads)
+
+pair_coeff 3 4 4.0 1.0 1.8  # 'weakly' sticky to type 3
+pair_coeff 4 4 4.0 1.0 1.8  # 'weakly' sticky to each other (type 4)
+pair_coeff 2 4 8.0 1.0 1.8  # 'very' sticky to type 2
+
+
+###
+# Set up fixes
+###
+variable seed equal 54657651+${no_prot}*100     # a seed for the thermostat
+
+fix mynve all nve                             # NVE integrator
+fix mylange all langevin   1.0 1.0 1.0 ${seed}  # langevin thermostat
+
+# want atoms confined within a sphere
+fix myind all indent 50.0 sphere 0.0 0.0 0.0 28.226 side in
+
+
+##### Output thermodynamic info to screen  #####
+thermo 5000
+thermo_style   custom   step  temp  epair
+#################################################
+
+
+##### Dump configurations
+dump dum1 all custom 5000 /storage/cmstore01/groups/brackley/s2205640/dumpfiles/dump_model_7_var_${no_prot}_run_1.dat id type x y z ix iy iz
+# every 1000 time steps, each atom's id, type, x,y,z coords and x,y,z image flages are output.
+# image flags count how many times each atom has moved through a periodic boundary
+#################################################
+
+
+###
+# set timestep of integrator
+###
+timestep 0.01 
+
+###
+# run integration for a number of steps to equilibrate with soft potentials
+###
+
+
+## then replace the 'run' section with the follwing, which sets up a loop
+
+
+variable nloops equal ${Runtime}/${Dt}
+variable a loop ${nloops} 
+label start_loop
+
+#SET VARIABLE SEEDS TO AVOID DRIFTS!
+variable seed1 equal ${a}*10+${seed} 
+variable seed2 equal ${a}*11+${seed} 
+
+#REDEFINE GROUPS EVERY TIME AT THE BEGINNING OF THE LOOP! 
+group Pon type 4
+group Poff type 5
+# Do the switching
+set group Pon type/fraction 5 ${prob} ${seed1}
+set group Poff type/fraction 4 ${prob} ${seed2}
+
+# do the run
+run ${Dt}
+
+#DELETE GROUPS
+group Pon delete
+group Poff delete
+
+next a 
+jump lammps_script_7_var_nop.lam start_loop  ## replace with the right file name here!!!!!
+
+
+#### write a final restart data file
+write_data ../restartfiles/final_model_7_var_${no_prot}_run_1.restart.data_sphere nocoeff
