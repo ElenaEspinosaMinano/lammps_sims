@@ -1,6 +1,8 @@
-### Summer Project 2024 LAMMPS simulations
+<h3 align="center">Summer Project 2024 LAMMPS simulations</h3>
 
-Simulations consist of representing a 5 Mbp chromatin region around the Mouse _Sox2_ gene as a coarse-grained polymer chain of beads with each bead representing ~1 kbp of chromatin. See [report](https://github.com/ElenaEspinosaMinano/lammps_sims/blob/main/Summer_Project_Report.pdf) and [poster](https://github.com/ElenaEspinosaMinano/lammps_sims/blob/main/Summer_Project_Poster.pdf) for more info.
+---
+
+Simulations consist of representing a 5 Mbp chromatin region around the mouse _Sox2_ gene as a coarse-grained polymer chain of beads (each bead representing ~1 kbp of chromatin) and representing binding proteins as diffusing beads which interact with the polymer with a specified attraction strength. See [report](https://github.com/ElenaEspinosaMinano/lammps_sims/blob/main/Summer_Project_Report.pdf) and [poster](https://github.com/ElenaEspinosaMinano/lammps_sims/blob/main/Summer_Project_Poster.pdf) for more info.
 
 The **first** investigation (**non_swi_lammps_sims** folder) conisted of running Models 1-4 which contain 5300 atoms in total:
 - 5000 polymer beads (4669 type 1, 81 type 2 and 250 type 3 beads)
